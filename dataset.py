@@ -20,6 +20,7 @@ class Timit(LightningDataModule):
         self.eval_batch_size = eval_batch_size
         self.processor = Wav2Vec2Processor.from_pretrained("./cache/models/data2vec")
         self.sampling_rate = 16000
+        self.cache_dir = "./cache/datasets/timit_asr"
 
     def get_array(self, batch):
         audio = batch["audio"]
@@ -37,8 +38,8 @@ class Timit(LightningDataModule):
 
     def setup(self,stage = None):
         self.splits = dict(
-            train = load_dataset("timit_asr",split=datasets.ReadInstruction('train', to=95, unit='%'), cache_dir="./cache/datasets"),
-            val = load_dataset("timit_asr",split=datasets.ReadInstruction('train', from_=-5, unit='%'), cache_dir="./cache/datasets"),
+            train = load_dataset("timit_asr",split=datasets.ReadInstruction('train', to=95, unit='%'), cache_dir=self.cache_dir),
+            val = load_dataset("timit_asr",split=datasets.ReadInstruction('train', from_=-5, unit='%'), cache_dir=self.cache_dir),
             test=load_dataset("timit_asr", split=datasets.ReadInstruction(
                 'test', to=50, unit='%'), cache_dir="./cache/datasets")
         )
@@ -55,7 +56,7 @@ class Timit(LightningDataModule):
         #         self.prepare_batch,  batched=True)
 
     def prepare_data(self):
-        load_dataset("timit_asr", cache_dir="./cache/datasets")
+        load_dataset("timit_asr", cache_dir=self.cache_dir)
 
     def collate_fn(self, batch):
         processed = self.processor([it['input_values'] for it in batch], padding=True,
@@ -88,9 +89,9 @@ class LibriSpeech(LightningDataModule):
         super().__init__()
         self.train_batch_size = train_batch_size
         self.eval_batch_size = eval_batch_size
-        self.processor = Wav2Vec2Processor.from_pretrained(
-            "facebook/data2vec-audio-base-960h", cache_dir='./cache/models/data2vec')
+        self.processor = Wav2Vec2Processor.from_pretrained("./cache/models/data2vec")
         self.sampling_rate = 16000
+        self.cache_dir = "./cache/datasets/librispeech_asr"
 
     def get_array(self, batch):
         audio = batch["audio"]
@@ -108,9 +109,9 @@ class LibriSpeech(LightningDataModule):
 
     def setup(self,stage = None):
         self.splits = dict(
-            train = load_dataset("librispeech_asr",'clean',split='train.360', cache_dir="./cache/datasets/librispeech"),
-            val = load_dataset("librispeech_asr",'clean',split='validation', cache_dir="./cache/datasets/librispeech"),
-            test=load_dataset("librispeech_asr",'clean', split='test', cache_dir="./cache/datasets/librispeech")
+            train = load_dataset("librispeech_asr",'clean',split='train.360', cache_dir=self.cache_dir),
+            val = load_dataset("librispeech_asr",'clean',split='validation', cache_dir=self.cache_dir),
+            test=load_dataset("librispeech_asr",'clean', split='test', cache_dir=self.cache_dir)
         )
         # for k,v in self.splits.items():
         #     self.splits[k] = v.map(self.prepare_batch,remove_columns=v.column_names)
@@ -125,8 +126,7 @@ class LibriSpeech(LightningDataModule):
         #         self.prepare_batch,  batched=True)
 
     def prepare_data(self):
-        # train = load_dataset("librispeech_asr", 'clean',cache_dir="./cache/datasets/librispeech"),
-        pass
+        train = load_dataset("librispeech_asr", 'clean',cache_dir=self.cache_dir),
 
     def collate_fn(self, batch):
         processed = self.processor([it['input_values'] for it in batch], padding=True,

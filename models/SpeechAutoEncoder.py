@@ -49,7 +49,6 @@ class SpeechAutoEncoder(LightningModule):
 
         # save the input file and the output
         for i in range(0,5):
-            breakpointexperiments/SAE/epoch=35-val_loss=0.167523.ckpt()
             sf.write(os.path.join(self.logger.log_dir,'val_epoch{}_input_{}.wav'.format(self.current_epoch,i)),in_tensor[i,:],self.sampling_rate)
         return {"loss": loss}
 

@@ -22,3 +22,4 @@ decoder = AutoModel.from_pretrained("jaketae/hifigan-lj-v1", trust_remote_code=T
 encoder.save_pretrained('./cache/models/data2vec')
 processor.save_pretrained('./cache/models/data2vec')
 decoder.save_pretrained('./cache/models/hifigan')
+
