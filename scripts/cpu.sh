@@ -1,0 +1,1 @@
+salloc -N 1 --cpus-per-task=8 -t 144:00:00 -p bme_cpu
