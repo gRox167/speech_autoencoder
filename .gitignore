@@ -1,0 +1,21 @@
+*.bin
+*.pyc
+__pycache__/
+
+.ipynb_checkpoints
+
+cache/models/
+cache/datasets/
+experiments/
+
+# Visual Studio Code files
+.vs
+/.vscode/*
+!/.vscode/extensions.json
+!/.vscode/settings_recommended.json
+
+*.zip
+
+# MacOS dir files 
+.DS_Store
+
