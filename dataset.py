@@ -126,7 +126,9 @@ class LibriSpeech(LightningDataModule):
         #         self.prepare_batch,  batched=True)
 
     def prepare_data(self):
-        train = load_dataset("librispeech_asr", 'clean',cache_dir=self.cache_dir),
+        # load_dataset("librispeech_asr", 'other',cache_dir=self.cache_dir),
+        dataset = load_dataset("librispeech_asr", 'clean',cache_dir=self.cache_dir)
+        dataset.save_to_disk(os.path.join(self.cache_dir,"saved"))
 
     def collate_fn(self, batch):
         processed = self.processor([it['input_values'] for it in batch], padding=True,
@@ -146,3 +148,7 @@ class LibriSpeech(LightningDataModule):
 
     def test_dataloader(self):
         return DataLoader(self.splits['test'], batch_size=self.eval_batch_size, collate_fn=self.collate_fn)
+
+if __name__ == "__main__":
+    dataset = LibriSpeech()
+    dataset.prepare_data()
