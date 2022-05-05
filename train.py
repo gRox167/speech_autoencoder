@@ -1,6 +1,6 @@
 import torch
 import argparse
-from dataset import Timit
+from dataset import LibriSpeech
 import importlib
 import models.SpeechAutoEncoder as SAE
 from transformers import AutoConfig
@@ -25,17 +25,18 @@ if __name__ == '__main__':
     os.environ['TRANSFORMERS_OFFLINE']="1"
     args = get_args()
     config = importlib.import_module(args.config_path)
-    model_config = config.model_config
+    task_config = config.task_config
     train_config = config.train_config
     dataset_config = config.dataset_config
 
-    device = torch.device('cuda:'+str(train_config['gpus'])
-                          if torch.cuda.is_available() else 'cpu')
+    # device = torch.device('cuda:'+str(train_config['gpus'])
+    #                       if torch.cuda.is_available() else 'cpu')
     torch.cuda.empty_cache()
     seed_everything(42)
+    # torch.use_deterministic_algorithms(False)
 
     check_mk_dirs(train_config['log_path'])
-    data = Timit(**dataset_config)
+    data = LibriSpeech(**dataset_config)
 
     checkpoint_callback = ModelCheckpoint(
         monitor='val_loss',
@@ -48,16 +49,19 @@ if __name__ == '__main__':
     tb_logger = pl_loggers.TensorBoardLogger(train_config['log_path'])
 
     if args.mode == 'train':
-        model = config.light_model(**model_config) #if '1' in train_config['stage'] else Model_Stage_2(
+        model = config.task(**task_config) #if '1' in train_config['stage'] else Model_Stage_2(
             # model_config, train_config)
         # print(model)
         trainer = Trainer(
-            # gpus=train_config["gpus"],
+            accelerator="gpu", 
+            strategy="dp",
+            devices=train_config["devices"],
             max_epochs=train_config["max_epochs"],
             callbacks=callbacks,
             default_root_dir=train_config['log_path'],
             deterministic=train_config['deterministic'],
             logger=tb_logger,
+            # precision=32
             # num_sanity_val_steps=1, #if dataset_config['stage'] == '2' else 2,
             # log_every_n_steps=40,
             # check_val_every_n_epoch=50,
@@ -67,12 +71,14 @@ if __name__ == '__main__':
             datamodule=data)
 
     else:
-        model = config.light_model(**model_config) #if '1' in train_config['stage'] else Model_Stage_2(
+        model = config.task(**task_config) #if '1' in train_config['stage'] else Model_Stage_2(
         # state_dict = torch.load(args.checkpoint,map_location=device)['state_dict']
         # model.load_state_dict(state_dict)
         print(model)
         trainer = Trainer(
-            gpus=train_config["gpus"],
+            accelerator="gpu", 
+            strategy="dp",
+            devices=train_config["devices"],
             max_epochs=train_config["max_epochs"],
             callbacks=callbacks,
             default_root_dir=train_config['log_path'],

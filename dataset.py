@@ -91,11 +91,14 @@ class LibriSpeech(LightningDataModule):
         self.eval_batch_size = eval_batch_size
         self.processor = Wav2Vec2Processor.from_pretrained("./cache/models/data2vec")
         self.sampling_rate = 16000
-        self.cache_dir = "./cache/datasets/librispeech_asr"
+        self.cache_dir = "./cache/datasets/LibriSpeech"
 
     def get_array(self, batch):
+        # breakpoint()
         audio = batch["audio"]
+        #normalization
         batch['input_values'] = audio['array']
+        # batch['input_values'] = (audio['array']-audio['array'].min())/(audio['array'].max()-audio['array'].min())*2-1
         batch["input_length"] = len(batch["input_values"])
         return batch
 
@@ -109,9 +112,10 @@ class LibriSpeech(LightningDataModule):
 
     def setup(self,stage = None):
         self.splits = dict(
-            train = load_dataset("librispeech_asr",'clean',split='train.360', cache_dir=self.cache_dir),
-            val = load_dataset("librispeech_asr",'clean',split='validation', cache_dir=self.cache_dir),
-            test=load_dataset("librispeech_asr",'clean', split='test', cache_dir=self.cache_dir)
+            train = load_dataset("./cache/datasets/LibriSpeech",'clean',split='train.360', cache_dir=self.cache_dir),
+            # train = load_dataset("./cache/datasets/LibriSpeech",'clean',split='train.360[0:32]', cache_dir=self.cache_dir),
+            val = load_dataset("./cache/datasets/LibriSpeech",'clean',split='validation', cache_dir=self.cache_dir),
+            test=load_dataset("./cache/datasets/LibriSpeech",'clean', split='test[0:2]', cache_dir=self.cache_dir)
         )
         # for k,v in self.splits.items():
         #     self.splits[k] = v.map(self.prepare_batch,remove_columns=v.column_names)
@@ -127,12 +131,12 @@ class LibriSpeech(LightningDataModule):
 
     def prepare_data(self):
         # load_dataset("librispeech_asr", 'other',cache_dir=self.cache_dir),
-        dataset = load_dataset("librispeech_asr", 'clean',cache_dir=self.cache_dir)
-        dataset.save_to_disk(os.path.join(self.cache_dir,"saved"))
+        dataset = load_dataset("./cache/datasets/LibriSpeech", 'clean',cache_dir=self.cache_dir)
+        # dataset.save_to_disk(os.path.join(self.cache_dir,"saved"))
 
     def collate_fn(self, batch):
-        processed = self.processor([it['input_values'] for it in batch], padding=True,
-                                        pad_to_multiple_of=320, return_tensors="pt", batched=True,sampling_rate = 16000)
+        processed = self.processor([it['input_values'] for it in batch], padding='max_length', max_length = 256000, truncation = True,
+                                         return_tensors="pt", batched=True,sampling_rate = 16000)
         output = dict(
             input_values=processed['input_values'],
             attention_mask=processed['attention_mask'],
@@ -150,5 +154,11 @@ class LibriSpeech(LightningDataModule):
         return DataLoader(self.splits['test'], batch_size=self.eval_batch_size, collate_fn=self.collate_fn)
 
 if __name__ == "__main__":
+    # dataset = Timit()
+    # dataset.prepare_data()
     dataset = LibriSpeech()
-    dataset.prepare_data()
+    dataset.setup()
+    d = dataset.val_dataloader()
+    batch = next(iter(d))
+    breakpoint()
+    # dataset.prepare_data()

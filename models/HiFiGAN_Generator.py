@@ -169,7 +169,6 @@ class HiFiGAN(PreTrainedModel):
         x = F.leaky_relu(x)
         x = self.conv_post(x)
         x = torch.tanh(x)
-
         return x
 
     def remove_weight_norm(self):

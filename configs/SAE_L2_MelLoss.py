@@ -1,3 +1,4 @@
+
 import os
 from pathlib import Path
 from torch import optim
@@ -6,7 +7,7 @@ import torch
 from transformers import Data2VecAudioConfig,AutoConfig
 
 MODEL_NAME = 'SAE'
-loss = torch.nn.SmoothL1Loss()
+loss = torch.nn.MSELoss()
 light_model = SpeechAutoEncoder
 sampling_rate = 16000
 base_path = Path(__file__).parent.parent
@@ -23,24 +24,24 @@ model_config = dict(
         sampling_rate=sampling_rate),
     optimizer=optim.AdamW,
     loss_fn=loss,
-    lr=[0.0000001,0.001],
+    lr=[0.00001,0.00001],
     sampling_rate = sampling_rate,
 )
 
 dataset_config = dict(
-    train_batch_size= 64,
-    eval_batch_size = 64,
-    num_workers=0,
+    train_batch_size= 16,
+    eval_batch_size = 8,
+    num_workers=40,
 )
 
 train_config = dict(
-    gpus=1,
+    devices= 4,
     mode = 'train',
     log_path = './experiments/'+MODEL_NAME,
     max_epochs= 2000,
     # train_batch_size= 2,
     # eval_batch_size = 1,
-    deterministic=True,
+    deterministic=False,
 )
 # nohup python train.py --config config.segment_NIKENet_2D --mode continue --gpu 0 --checkpoint experiment/segment_NIKENetSeg_2D/last.ckpt > seg.out &
 # nohup python train.py --config config.segment_NIKENet_2D --mode train --gpu 1&
