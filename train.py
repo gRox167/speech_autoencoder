@@ -2,7 +2,6 @@ import torch
 import argparse
 from dataset import LibriSpeech
 import importlib
-import models.SpeechAutoEncoder as SAE
 from transformers import AutoConfig
 from pytorch_lightning import LightningModule, Trainer, seed_everything
 from pytorch_lightning import loggers as pl_loggers
@@ -12,8 +11,8 @@ from utils.utils import *
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config_path', type=str,
-                        default='configs.SAE', help='config path')
+    parser.add_argument('--config', type=str,
+                        default='configs.SpeechWGAN', help='config path')
     parser.add_argument('--mode', type=str,
                         default='test', help='train or test?')
     parser.add_argument('--checkpoint', type=str,
@@ -24,7 +23,7 @@ if __name__ == '__main__':
     os.environ['HF_DATASETS_OFFLINE']="1"
     os.environ['TRANSFORMERS_OFFLINE']="1"
     args = get_args()
-    config = importlib.import_module(args.config_path)
+    config = importlib.import_module(args.config)
     task_config = config.task_config
     train_config = config.train_config
     dataset_config = config.dataset_config
@@ -54,13 +53,14 @@ if __name__ == '__main__':
         # print(model)
         trainer = Trainer(
             accelerator="gpu", 
-            strategy="dp",
+            strategy="ddp",
             devices=train_config["devices"],
             max_epochs=train_config["max_epochs"],
             callbacks=callbacks,
             default_root_dir=train_config['log_path'],
             deterministic=train_config['deterministic'],
             logger=tb_logger,
+            num_sanity_val_steps=1,
             # precision=32
             # num_sanity_val_steps=1, #if dataset_config['stage'] == '2' else 2,
             # log_every_n_steps=40,

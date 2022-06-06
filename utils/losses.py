@@ -74,29 +74,34 @@ class L2_MelLoss(nn.Module):
                  window_fn: Callable[..., Tensor] = torch.hann_window,
                  power: float = 2.,
                  normalized: bool = False,
-                 wkwargs: Optional[dict] = None,
-                 center: bool = True,
-                 pad_mode: str = "reflect",
-                 onesided: bool = True,
-                 norm: Optional[str] = None,
-                 mel_scale: str = "htk"):
-        super(nn.MSELoss, self).__init__(size_average, reduce, reduction)
-        self.mel_transform = MelSpectrogram(sample_rate,
-                                            n_fft,
-                                            win_length,
-                                            hop_length,
-                                            f_min,
-                                            pad,
-                                            n_mels,
-                                            window_fn,
-                                            power,
-                                            normalized,
-                                            wkwargs,
-                                            center,
-                                            pad_mode,
-                                            onesided,
-                                            norm,
-                                            mel_scale)
+                #  wkwargs: Optional[dict] = None,
+                #  center: bool = True,
+                #  pad_mode: str = "reflect",
+                #  onesided: bool = True,
+                #  norm: Optional[str] = None,
+                #  mel_scale: str = "htk"
+                 ):
+        super().__init__()
+        # super(nn.MSELoss, self).__init__(size_average, reduce, reduction)
+        self.reduction=reduction
+        self.mel_transform = MelSpectrogram(
+                                            sample_rate,
+                                            # n_fft,
+                                            # win_length,
+                                            # hop_length,
+                                            # f_min,
+                                            # pad,
+                                            # n_mels,
+                                            # window_fn,
+                                            # power,
+                                            # normalized,
+                                            # wkwargs,
+                                            # center,
+                                            # pad_mode,
+                                            # onesided,
+                                            # norm,
+                                            # mel_scale
+                                            )
         self.alpha, self.beta = alpha, beta
 
     def forward(self, input: Tensor, target: Tensor) -> Tensor:

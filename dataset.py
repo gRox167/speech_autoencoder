@@ -84,6 +84,9 @@ class LibriSpeech(LightningDataModule):
         # max_seq_length: int = 128,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
+        train_ratio: str = ['0:32'],
+        val_ratio: str = ['0:32'],
+        test_ratio: str = ['0:2'],
         **kwarg,
     ):
         super().__init__()
@@ -92,6 +95,9 @@ class LibriSpeech(LightningDataModule):
         self.processor = Wav2Vec2Processor.from_pretrained("./cache/models/data2vec")
         self.sampling_rate = 16000
         self.cache_dir = "./cache/datasets/LibriSpeech"
+        self.train_ratio = train_ratio
+        self.val_ratio = val_ratio
+        self.test_ratio = test_ratio
 
     def get_array(self, batch):
         # breakpoint()
@@ -112,10 +118,9 @@ class LibriSpeech(LightningDataModule):
 
     def setup(self,stage = None):
         self.splits = dict(
-            train = load_dataset("./cache/datasets/LibriSpeech",'clean',split='train.360', cache_dir=self.cache_dir),
-            # train = load_dataset("./cache/datasets/LibriSpeech",'clean',split='train.360[0:32]', cache_dir=self.cache_dir),
-            val = load_dataset("./cache/datasets/LibriSpeech",'clean',split='validation', cache_dir=self.cache_dir),
-            test=load_dataset("./cache/datasets/LibriSpeech",'clean', split='test[0:2]', cache_dir=self.cache_dir)
+            train = load_dataset("./cache/datasets/LibriSpeech",'clean',split='train.360'+self.train_ratio, cache_dir=self.cache_dir),
+            val = load_dataset("./cache/datasets/LibriSpeech",'clean',split='validation'+self.val_ratio, cache_dir=self.cache_dir),
+            test=load_dataset("./cache/datasets/LibriSpeech",'clean', split='test'+self.test_ratio, cache_dir=self.cache_dir)
         )
         # for k,v in self.splits.items():
         #     self.splits[k] = v.map(self.prepare_batch,remove_columns=v.column_names)
@@ -140,7 +145,8 @@ class LibriSpeech(LightningDataModule):
         output = dict(
             input_values=processed['input_values'],
             attention_mask=processed['attention_mask'],
-            input_length=processed['input_values'].shape[-1]
+            input_length=processed['input_values'].shape[-1],
+            batch_size=processed['input_values'].shape[0]
         )
         return output
 

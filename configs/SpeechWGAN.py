@@ -1,7 +1,8 @@
-import os
 from pathlib import Path
 from torch import optim
-from models.SpeechAutoEncoder import SpeechGenerator, SpeechWGAN
+from models.HiFiGAN_Generator import SpeechGenerator
+from models.HiFiGAN_Discriminator import SpeechDiscriminator
+from tasks.SpeechWGAN import SpeechWGAN
 import torch
 from transformers import Data2VecAudioConfig,AutoConfig
 
@@ -25,18 +26,24 @@ model_config = dict(
 )
 
 task_config = dict(
-    generator = SpeechGenerator(model_config),
-    discriminator = SpeechDiscriminator(model_config),
+    generator = SpeechGenerator(**model_config),
+    discriminator = SpeechDiscriminator(),
     optimizer=optim.AdamW,
+    n_critics = 5,
     loss_fn=loss,
-    lr=[0.00001,0.00001],
+    lr=[0.000001,0.000001],
     sampling_rate = sampling_rate,
 )
 
 dataset_config = dict(
-    train_batch_size= 16,
-    eval_batch_size = 8,
+    train_batch_size= 2,
+    eval_batch_size = 2,
     num_workers=40,
+    # train_ratio = '[0:32]',
+    # val_ratio = '[0:32]',
+    train_ratio = '',
+    val_ratio = '',
+    test_ratio = '[0:2]'
 )
 
 train_config = dict(

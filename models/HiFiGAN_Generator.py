@@ -3,7 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Conv1d, ConvTranspose1d
 from torch.nn.utils import remove_weight_norm, weight_norm
-from transformers import PreTrainedModel
+
+from transformers import Data2VecAudioModel,AutoConfig,PreTrainedModel
 
 
 LRELU_SLOPE = 0.1
@@ -181,9 +182,21 @@ class HiFiGAN(PreTrainedModel):
         remove_weight_norm(self.conv_post)
 
 
+class SpeechGenerator(nn.Module):
+    def __init__(self, encoder_config, pretrain_encoder_flag, decoder_config, **kwargs):
+        super().__init__()
+        self.encoder = Data2VecAudioModel.from_pretrained(
+            './cache/models/data2vec') if pretrain_encoder_flag == True else Data2VecAudioModel(encoder_config)
+        self.decoder = HiFiGAN(decoder_config)
+
+    def forward(self, x):
+        x = self.encoder(x)
+        # output of encoder shape is like (batch,length,channel)
+        # input of decoder shape is like (batch,channel,length)
+        x = self.decoder(x.last_hidden_state.transpose(-1, -2))
+        return x
 
 if __name__=="__main__":
-    from transformers import Data2VecAudioModel,Data2VecAudioConfig,Wav2Vec2Processor,AutoModel,AutoConfig
     decoder_configuration = AutoConfig.from_pretrained("jaketae/hifigan-lj-v1", trust_remote_code=True,        
         upsample_rates=[2, 2, 2, 2, 2, 2, 5],
         upsample_initial_channel=1536,
