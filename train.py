@@ -8,7 +8,7 @@ from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import ModelCheckpoint,LearningRateMonitor,StochasticWeightAveraging
 from utils.utils import *
 # importlib.reload(SAE)
-
+os.environ["CUDA_VISIBLE_DEVICES"]="4,5,6,7"
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str,
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     # torch.use_deterministic_algorithms(False)
 
     check_mk_dirs(train_config['log_path'])
-    data = LibriSpeech(**dataset_config)
+    data = dataset_config["dataset_class"](**dataset_config)
 
     checkpoint_callback = ModelCheckpoint(
         monitor='val_loss',
@@ -53,7 +53,6 @@ if __name__ == '__main__':
         # print(model)
         trainer = Trainer(
             accelerator="gpu", 
-            strategy="ddp",
             devices=train_config["devices"],
             max_epochs=train_config["max_epochs"],
             callbacks=callbacks,
@@ -61,7 +60,10 @@ if __name__ == '__main__':
             deterministic=train_config['deterministic'],
             logger=tb_logger,
             num_sanity_val_steps=1,
-            # precision=32
+            strategy=train_config['strategy'],
+            precision=train_config['precision'],
+            reload_dataloaders_every_n_epochs=1,
+            auto_select_gpus=train_config['auto_select_gpus'],
             # num_sanity_val_steps=1, #if dataset_config['stage'] == '2' else 2,
             # log_every_n_steps=40,
             # check_val_every_n_epoch=50,
@@ -71,13 +73,13 @@ if __name__ == '__main__':
             datamodule=data)
 
     else:
-        model = config.task(**task_config) #if '1' in train_config['stage'] else Model_Stage_2(
+        model = config.task(**task_config,device = 'cpu') #if '1' in train_config['stage'] else Model_Stage_2(
         # state_dict = torch.load(args.checkpoint,map_location=device)['state_dict']
         # model.load_state_dict(state_dict)
         print(model)
         trainer = Trainer(
             accelerator="gpu", 
-            strategy="dp",
+            strategy=train_config['strategy'],
             devices=train_config["devices"],
             max_epochs=train_config["max_epochs"],
             callbacks=callbacks,
@@ -87,7 +89,11 @@ if __name__ == '__main__':
             # num_sanity_val_steps=1, #if dataset_config['stage'] == '2' else 2,
             # log_every_n_steps=40,
             # check_val_every_n_epoch=50,
-            resume_from_checkpoint=args.checkpoint)
+            precision=train_config['precision'],
+            reload_dataloaders_every_n_epochs=1,
+            resume_from_checkpoint=args.checkpoint,
+            auto_select_gpus=train_config['auto_select_gpus'],
+            )
 
         if args.mode == 'continue':
             trainer.fit(model=model, datamodule=data)

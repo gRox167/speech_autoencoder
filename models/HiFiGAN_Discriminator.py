@@ -163,11 +163,7 @@ class SpeechDiscriminator(nn.Module):
         return loss, generator_losses
 
     def mse_mel_loss(self, fake_samples, real_samples):
-        loss = 0
-        for fake_sample, real_sample in zip(fake_samples,real_samples):
-            l = self.mse_mel_loss_fn(fake_sample,real_sample)
-            loss += l 
-        return loss
+        return self.mse_mel_loss_fn(fake_samples,real_samples)
 
 
     def feature_loss(self, fmap_r, fmap_g):

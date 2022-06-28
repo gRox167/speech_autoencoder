@@ -154,11 +154,13 @@ class HiFiGAN(PreTrainedModel):
         self.ups.apply(init_weights)
         self.conv_post.apply(init_weights)
 
-    def forward(self, x):
+    def forward(self, x, output_hidden_states=False):
+        hidden_states = []
         x = self.conv_pre(x)
         # print(x.shape)
         for i in range(self.num_upsamples):
             x = F.leaky_relu(x, LRELU_SLOPE)
+            hidden_states.append(x)
             x = self.ups[i](x)
             xs = None
             for j in range(self.num_kernels):
@@ -168,9 +170,14 @@ class HiFiGAN(PreTrainedModel):
                     xs += self.resblocks[i * self.num_kernels + j](x)
             x = xs / self.num_kernels
         x = F.leaky_relu(x)
+        hidden_states.append(x)
         x = self.conv_post(x)
         x = torch.tanh(x)
-        return x
+        hidden_states.append(x)
+        if output_hidden_states:
+            return x,hidden_states
+        else:
+            return x
 
     def remove_weight_norm(self):
         print("Removing weight norm...")
@@ -183,18 +190,24 @@ class HiFiGAN(PreTrainedModel):
 
 
 class SpeechGenerator(nn.Module):
-    def __init__(self, encoder_config, pretrain_encoder_flag, decoder_config, **kwargs):
+    def __init__(self, encoder_config, pretrain_encoder_flag, decoder_config, output_hidden_states = False, **kwargs):
         super().__init__()
         self.encoder = Data2VecAudioModel.from_pretrained(
             './cache/models/data2vec') if pretrain_encoder_flag == True else Data2VecAudioModel(encoder_config)
         self.decoder = HiFiGAN(decoder_config)
 
-    def forward(self, x):
-        x = self.encoder(x)
+    def forward(self, x, output_hidden_states=False):
+        if output_hidden_states:
+            x = self.encoder(x, output_hidden_states=True)
+            encoder_hidden_states = x.hidden_states
+            x, decoder_hidden_states = self.decoder(x.last_hidden_state.transpose(-1, -2),output_hidden_states)
+            return x, encoder_hidden_states,decoder_hidden_states
+        else:
+            x = self.encoder(x)
+            x = self.decoder(x.last_hidden_state.transpose(-1, -2),output_hidden_states)
+            return x
         # output of encoder shape is like (batch,length,channel)
         # input of decoder shape is like (batch,channel,length)
-        x = self.decoder(x.last_hidden_state.transpose(-1, -2))
-        return x
 
 if __name__=="__main__":
     decoder_configuration = AutoConfig.from_pretrained("jaketae/hifigan-lj-v1", trust_remote_code=True,        

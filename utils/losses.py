@@ -94,7 +94,7 @@ class L2_MelLoss(nn.Module):
                                             # n_mels,
                                             # window_fn,
                                             # power,
-                                            # normalized,
+                                            normalized=True,
                                             # wkwargs,
                                             # center,
                                             # pad_mode,
@@ -108,5 +108,7 @@ class L2_MelLoss(nn.Module):
         mse_loss = self.alpha * \
             F.mse_loss(input, target, reduction=self.reduction)
         input, target = self.mel_transform(input), self.mel_transform(target)
-        mel_loss = self.beta * F.mse_loss(input, target)
+        mel_loss = self.beta * F.l1_loss(input, target, reduction=self.reduction)
+        # print('mse_loss:{}'.format(mse_loss))
+        # print('mel_loss:{}'.format(mel_loss))
         return mse_loss + mel_loss
